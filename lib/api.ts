@@ -9,12 +9,20 @@ export const fetchProducts = async (
     sortField = 'unique_scans_n'
 ): Promise<APIResponse> => {
     
+    const sortMapping: Record<string, string> = {
+        'unique_scans_n': 'unique_scans_n',
+        'name_asc': 'product_name',
+        'name_desc': '-product_name',
+        'grade_asc': 'nutriscore_score',   
+        'grade_desc': '-nutriscore_score', 
+    };
+
     const params = new URLSearchParams({
         action: 'process',
         json: '1',
         page: page.toString(),
         page_size: '24',
-        sort_by: sortField === 'nutrition_grades' ? 'nutriscore_score' : sortField
+        sort_by: sortMapping[sortField] || 'unique_scans_n'
     });
 
     if (query) params.append('search_terms', query);
@@ -31,7 +39,6 @@ export const fetchProducts = async (
 }
 
 export const fetchProductByBarcode = async (barcode: string): Promise<Product | null> => {
-    // Standard V2 API for single product lookup
     const res = await fetch(`${BASE_URL}/api/v2/product/${barcode}.json`);
     if (!res.ok) return null;
     const data = await res.json();

@@ -15,9 +15,9 @@ export default function ProductCard({product}: {product: Product}){
 
     return(
         <Link href={`/product/${product.code}`}
-        className="group border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white"
+        className="group border-2 border-slate-900 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white"
         >
-            <div className="relative h-48 w-full bg-gray-100">
+            <div className="relative border-2 h-48 w-full bg-gray-100">
                 {product.image_url ? (<img 
                 src={product.image_url} 
                 alt={product.product_name} 
