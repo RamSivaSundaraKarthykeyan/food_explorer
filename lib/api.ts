@@ -47,3 +47,11 @@ export const fetchCategories = async (): Promise<string[]> => {
         return [];
     }
 }
+
+export const getNutrient = (nutriments: any, key: string) => {
+    if (!nutriments) return 0;
+    if (key === 'energy') {
+        return nutriments['energy-kcal_100g'] ?? nutriments['energy_100g'] ?? 0;
+    }
+    return nutriments[`${key}_100g`] ?? 0;
+};

@@ -5,7 +5,7 @@ export interface Product {
     categories?: string;
     ingredients_text?: string;
     nutrition_grades?: string;
-    nutrients?: {
+    nutriments?: {
         energy_100g?: number;
         fat_100g?: number;
         carbohydrates_100g?: number;
