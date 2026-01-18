@@ -35,3 +35,21 @@ export const fetchProductByBarcode = async (barcode: string): Promise<Product | 
     const data = await res.json();
     return data.status === 1 ? data.product : null;
 };
+
+export const fetchCategories = async (): Promise<string[]> => {
+    try{
+        const res = await fetch(`${BASE_URL}/category.json`);
+        if (!res.ok) throw new Error('Failed to fetch categories');
+        const data = await res.json();
+
+        // The API returns an array of objects in 'tags'. 
+        // We only want the names of the most popular ones to keep the UI clean.
+
+        return data.tags.slice(0,50).map((tag: any) => tag.name);  // we slice so that we will get the first 50 categories
+    }
+
+    catch (error){
+        console.error("Error fetching categories:", error)
+        return [];
+    }
+}
