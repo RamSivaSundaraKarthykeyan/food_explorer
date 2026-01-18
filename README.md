@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Project Technical Report: Solving Data Integrity & Connectivity
 
-## Getting Started
+This project is a Next.js application that interfaces with the Open Food Facts (OFF) API. Throughout development, I encountered significant hurdles regarding how the API processes search queries versus direct barcode lookups.
+1. The Core Problem: Search vs. Direct Lookup
 
-First, run the development server:
+The primary issue was a conflict between the Search API (/cgi/search.pl) and the Product API (/api/v0/product/).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+    The Conflict: Users often entered barcodes into the general search bar. The legacy search script (search.pl) treats numeric strings with extra characters—like 6111242100992(EAN/EAN-13)—as a text search.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+    The Result: This caused the server to perform a complex database scan which often timed out (504 Gateway Timeout) or resulted in an empty product array.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+2. Methodology: Multi-Layer Sanitization
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+To solve this, I implemented a logic branch inside fetchProducts that detects the intent of the user's query before sending the request.
+A. Local Input Sanitization
 
-## Learn More
+I used a Regular Expression (\D) to strip all non-digit characters from the search query. This ensures that even if a user pastes a barcode with metadata, the application extracts the raw numeric key.
 
-To learn more about Next.js, take a look at the following resources:
+`
+const numericOnly = query.replace(/\D/g, ''); 
+const isBarcode = numericOnly.length >= 8 && numericOnly.length <= 14;
+`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+B. API Routing Logic
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Instead of sending everything to the Search API, I implemented an Internal Router:
 
-## Deploy on Vercel
+    If it's a Barcode: Route to api/v0/product/{barcode}.json. This is a direct Key-Value lookup, which is significantly faster and more reliable than a search query.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+    If it's Text: Route to cgi/search.pl?search_terms={query} for natural language processing.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. Resolving CORS and 504 Timeouts
+
+The browser console frequently reported CORS Missing Allow Origin. My investigation revealed that this was a symptom, not the cause.
+
+    The Discovery: When the Open Food Facts server received "noisy" characters (parentheses or slashes) in the URL, it crashed with a 504 Gateway Timeout.
+
+    The Browser Behavior: Because a 504 error page is a generic server response, it does not include the standard API CORS headers. The browser, seeing no headers, assumed a security violation.
+
+    The Solution: By cleaning the string before the fetch, the server responded with a 200 OK. Successful responses from OFF include the correct headers, causing the "CORS error" to disappear without needing server-side changes.
+
+4. Stability & Functionality Preservation
+
+A strict "Preservation of Utilities" policy was adopted to ensure that fixing the search logic did not break other pages.
+
+    Restoration of fetchProductByBarcode: This function was dedicated to the Product Detail pages, ensuring they remain isolated from the Home Page's search logic.
+
+    Utility Retention: The getNutrient helper was standardized to handle missing data gracefully, preventing UI crashes when a product lacks specific macro-nutrients.
