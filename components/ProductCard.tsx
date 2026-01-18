@@ -12,4 +12,32 @@ export default function ProductionCard({product}: {product: Product}){
     };
 
     const grade = product.nutrition_grades?.toLowerCase() || 'unknown';
+
+    return(
+        <Link href={`/product/${product.code}`}
+        className="group border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white"
+        >
+            <div className="relative h-48 w-full bg-gray-100">
+                {product.image_url ? (<img 
+                src={product.image_url} 
+                alt={product.product_name} 
+                className="w-full h-full object-contain p-2"
+                 />): (
+                    <div className="flex items-center justify-center h-full text-gray-400">No Image</div>
+                 )
+                }
+                {product.nutrition_grades && (
+                    <span className={`absolute top-2 right-2 text-white text-xs font-bold px-2 py-1 rounded uppercase ${gradeColors[grade] || 'bg-gray-400'}`}>
+                        Grade {grade}
+                    </span>
+                )}
+            </div>
+            <div className='p-4'>
+                <h3 className='font-bold text-gray-800 truncate group-hover:text-blue-600'>
+                    {product.product_name || 'Unnamed Product'}
+                </h3>
+                <p className='text-sm text-gray-500 truncate'>{product.categories?.split(',')[0]}</p>
+            </div>
+        </Link>
+    );
 }
