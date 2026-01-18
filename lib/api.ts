@@ -9,6 +9,32 @@ export const fetchProducts = async (
     sortField = 'unique_scans_n'
 ): Promise<APIResponse> => {
     
+    const trimmedQuery = query.trim();
+    
+    // Auto-Sanitize: Extract digits only to check if it's a barcode
+    const numericOnly = trimmedQuery.replace(/\D/g, ''); 
+    const isBarcode = numericOnly.length >= 8 && numericOnly.length <= 14;
+
+    // Direct Barcode Lookup (v0 is more stable for exact matches)
+    if (isBarcode) {
+        try {
+            const res = await fetch(`${BASE_URL}/api/v0/product/${numericOnly}.json`);
+            const data = await res.json();
+            
+            if (data.status === 1 && data.product) {
+                return {
+                    products: [data.product],
+                    count: 1,
+                    page: 1,
+                    page_size: 24
+                };
+            }
+        } catch (error) {
+            console.error("Barcode lookup failed:", error);
+        }
+    }
+
+    // Standard Search Logic
     const sortMapping: Record<string, string> = {
         'unique_scans_n': 'unique_scans_n',
         'name_asc': 'product_name',
@@ -25,7 +51,7 @@ export const fetchProducts = async (
         sort_by: sortMapping[sortField] || 'unique_scans_n'
     });
 
-    if (query) params.append('search_terms', query);
+    if (trimmedQuery) params.append('search_terms', trimmedQuery);
 
     if (category) {
         params.append('tagtype_0', 'categories');
@@ -39,7 +65,9 @@ export const fetchProducts = async (
 }
 
 export const fetchProductByBarcode = async (barcode: string): Promise<Product | null> => {
-    const res = await fetch(`${BASE_URL}/api/v2/product/${barcode}.json`);
+    // Sanitize barcode here as well for individual lookups
+    const cleanBarcode = barcode.replace(/\D/g, '');
+    const res = await fetch(`${BASE_URL}/api/v2/product/${cleanBarcode}.json`);
     if (!res.ok) return null;
     const data = await res.json();
     return data.status === 1 ? data.product : null;

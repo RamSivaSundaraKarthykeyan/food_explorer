@@ -5,7 +5,7 @@ import { fetchProducts, fetchCategories } from '@/lib/api';
 import { Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import Skeleton from '@/components/Skeleton';
-import { HomeIcon, SearchIcon } from 'lucide-react';
+import { HomeIcon, SearchIcon, InboxIcon } from 'lucide-react';
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -27,6 +27,9 @@ export default function HomePage() {
       const data = await fetchProducts(currentPage, query, selectedCategory, sortBy);
       setProducts((prev) => isNewSearch ? data.products : [...prev, ...data.products]);
       setPage((prev) => isNewSearch ? 2 : prev + 1);
+    } catch (error) {
+      console.error(error);
+      setProducts([]);
     } finally { 
       setLoading(false); 
     }
@@ -104,16 +107,23 @@ export default function HomePage() {
         </form>
       </div>
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {products.map((product, idx) => (
-          <ProductCard key={`${product.code}-${idx}`} product={product} />
-        ))}
-        {loading && Array(8).fill(0).map((_, i) => <Skeleton key={i} />)}
-      </div>
+      {/* Product Grid / Empty State */}
+      {products.length === 0 && !loading ? (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+          <InboxIcon className="w-16 h-16 mb-4 opacity-20" />
+          <p className="text-xl font-bold">No results found</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {products.map((product, idx) => (
+            <ProductCard key={`${product.code}-${idx}`} product={product} />
+          ))}
+          {loading && Array(8).fill(0).map((_, i) => <Skeleton key={i} />)}
+        </div>
+      )}
 
       {/* Pagination */}
-      {!loading && products.length > 0 && (
+      {!loading && products.length > 1 && (
         <div className="mt-16 text-center pb-12">
           <button 
             onClick={() => loadProducts()} 
