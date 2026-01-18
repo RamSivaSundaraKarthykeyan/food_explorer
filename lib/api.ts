@@ -8,48 +8,42 @@ export const fetchProducts = async (
     category = '',
     sortField = 'unique_scans_n'
 ): Promise<APIResponse> => {
+    
     const params = new URLSearchParams({
-        action: 'process', 
+        action: 'process',
         json: '1',
         page: page.toString(),
-        page_size: '20',
+        page_size: '24',
+        sort_by: sortField === 'nutrition_grades' ? 'nutriscore_score' : sortField
     });
 
     if (query) params.append('search_terms', query);
-    if(category){
+
+    if (category) {
         params.append('tagtype_0', 'categories');
         params.append('tag_contains_0', 'contains');
-        params.append('tag_0', category)
+        params.append('tag_0', category);
     }
 
-    params.append('sort_by', sortField);
-
     const res = await fetch(`${BASE_URL}/cgi/search.pl?${params.toString()}`);
-    if(!res.ok) throw new Error('Failed to fetch products');
-
+    if (!res.ok) throw new Error('Failed to fetch products');
     return res.json();
 }
 
 export const fetchProductByBarcode = async (barcode: string): Promise<Product | null> => {
-    const res =  await fetch(`${BASE_URL}/api/v2/product/${barcode}.json`);
+    // Standard V2 API for single product lookup
+    const res = await fetch(`${BASE_URL}/api/v2/product/${barcode}.json`);
+    if (!res.ok) return null;
     const data = await res.json();
     return data.status === 1 ? data.product : null;
 };
 
 export const fetchCategories = async (): Promise<string[]> => {
-    try{
-        const res = await fetch(`${BASE_URL}/category.json`);
-        if (!res.ok) throw new Error('Failed to fetch categories');
+    try {
+        const res = await fetch(`${BASE_URL}/categories.json`);
         const data = await res.json();
-
-        // The API returns an array of objects in 'tags'. 
-        // We only want the names of the most popular ones to keep the UI clean.
-
-        return data.tags.slice(0,50).map((tag: any) => tag.name);  // we slice so that we will get the first 50 categories
-    }
-
-    catch (error){
-        console.error("Error fetching categories:", error)
+        return data.tags.slice(0, 50).map((tag: any) => tag.name);
+    } catch (error) {
         return [];
     }
 }

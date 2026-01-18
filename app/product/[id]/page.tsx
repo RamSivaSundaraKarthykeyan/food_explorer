@@ -1,90 +1,79 @@
 import { fetchProductByBarcode } from '@/lib/api';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { HomeIcon } from 'lucide-react';
 
-export default async function ProductDetailPage({ params }: { params: { id: string } }) {
-  const product = await fetchProductByBarcode(params.id);
+// Next.js 15 requires params to be awaited
+export default async function ProductDetailPage({ 
+  params 
+}: { 
+  params: Promise<{ id: string }> 
+}) {
+  // 1. Unwrapping the params promise
+  const { id } = await params;
+  
+  // 2. Fetching the product using the unwrapped id
+  const product = await fetchProductByBarcode(id);
 
   if (!product) {
-    notFound(); // Triggers the Next.js 404 page
+    notFound();
   }
 
   const nutrients = product.nutrients;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Link href="/" className="text-blue-600 hover:underline mb-6 inline-block">
-        ← Back to Search
+    <div className="container mx-auto px-4 py-8 max-w-5xl min-h-screen bg-gray-50">
+      <Link 
+        href="/" 
+        className="inline-flex items-center gap-2 mb-8 p-3 bg-white border-2 border-slate-900 rounded-xl font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] hover:translate-y-1 hover:shadow-none transition-all"
+      >
+        <HomeIcon className="w-4 h-4 text-slate-900" />
+        <span className='text-slate-900'>Back to Gallery</span>
       </Link>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-white p-8 rounded-2xl shadow-sm border">
-        {/* Left: Image */}
-        <div className="flex justify-center bg-gray-50 rounded-xl p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 bg-white p-8 rounded-3xl border-4 border-slate-900 shadow-[12px_12px_0px_0px_rgba(15,23,42,1)]">
+        {/* Left Side: High Contrast Image Container */}
+        <div className="flex justify-center bg-slate-100 rounded-2xl p-6 border-2 border-slate-200">
           <img 
             src={product.image_url || '/placeholder.png'} 
             alt={product.product_name} 
-            className="max-h-[500px] object-contain"
+            className="max-h-[450px] object-contain drop-shadow-2xl"
           />
         </div>
 
-        {/* Right: Info */}
-        <div>
-          <h1 className="text-4xl font-bold mb-2">{product.product_name}</h1>
-          <p className="text-xl text-gray-500 mb-6">{product.categories}</p>
+        {/* Right Side: Details */}
+        <div className="space-y-6">
+          <h1 className="text-4xl font-black text-slate-900 leading-tight">
+            {product.product_name || 'Unknown Product'}
+          </h1>
+          
+          <div className="inline-block px-4 py-1 bg-blue-100 border-2 border-blue-600 text-blue-800 rounded-full font-bold text-sm">
+            {product.categories?.split(',')[0]}
+          </div>
 
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-2">Ingredients</h2>
-            <p className="text-gray-700 leading-relaxed">
-              {product.ingredients_text || "Ingredients information not available."}
+          <section>
+            <h2 className="text-xl font-black text-slate-900 uppercase mb-2">Ingredients</h2>
+            <p className="text-slate-700 leading-relaxed font-medium">
+              {product.ingredients_text || "Ingredients list unavailable for this item."}
             </p>
-          </div>
+          </section>
 
-          {/* Nutrition Table */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Nutritional Values (per 100g)</h2>
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-3 border-b">Nutrient</th>
-                    <th className="p-3 border-b">Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="p-3 border-b">Energy</td>
-                    <td className="p-3 border-b">{nutrients?.energy_100g} kcal</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 border-b">Fat</td>
-                    <td className="p-3 border-b">{nutrients?.fat_100g}g</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 border-b">Carbohydrates</td>
-                    <td className="p-3 border-b">{nutrients?.carbohydrates_100g}g</td>
-                  </tr>
-                  <tr>
-                    <td className="p-3 border-b">Proteins</td>
-                    <td className="p-3 border-b">{nutrients?.protiens_100g}g</td>
-                  </tr>
-                </tbody>
-              </table>
+          <section>
+            <h2 className="text-xl font-black text-slate-900 uppercase mb-4">Nutritional Facts (100g)</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: 'Energy', val: `${nutrients?.energy_100g ?? 0} kcal` },
+                { label: 'Fat', val: `${nutrients?.fat_100g ?? 0}g` },
+                { label: 'Carbs', val: `${nutrients?.carbohydrates_100g ?? 0}g` },
+                { label: 'Proteins', val: `${nutrients?.protiens_100g ?? 0}g` },
+              ].map((item) => (
+                <div key={item.label} className="p-3 border-2 border-slate-900 rounded-xl bg-white shadow-[4px_4px_0px_0px_rgba(15,23,42,1)]">
+                  <p className="text-xs font-black text-slate-500 uppercase">{item.label}</p>
+                  <p className="text-lg font-extrabold text-slate-900">{item.val}</p>
+                </div>
+              ))}
             </div>
-          </div>
-
-          {/* Labels */}
-          {product.labels_tags && product.labels_tags.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Labels</h2>
-              <div className="flex flex-wrap gap-2">
-                {product.labels_tags.map((label) => (
-                  <span key={label} className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full border border-green-200">
-                    {label.replace('en:', '').replace(/-/g, ' ')}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          </section>
         </div>
       </div>
     </div>
