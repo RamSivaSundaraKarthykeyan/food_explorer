@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Product } from '@/types';
 
 
-export default function ProductionCard({product}: {product: Product}){
+export default function ProductCard({product}: {product: Product}){
     const gradeColors: Record<string, string> = {
         a: 'bg-green-600',
         b: 'bg-green-400',
